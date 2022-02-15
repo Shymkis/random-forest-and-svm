@@ -1,6 +1,7 @@
 from itertools import *
 import math
 import random
+from tqdm import tqdm
 
 class Decision_Tree:
     def __init__(self, node_label, branches=None):
@@ -45,11 +46,15 @@ def plurality_value(examples):
     return max(count, key=count.get)
 
 def all_equal(examples):
-    iterable = []
-    for e in examples:
-        iterable.append(e["class"])
-    g = groupby(iterable)
+    # iterable = []
+    # for e in examples:
+    #     iterable.append(e["class"])
+    # g = groupby(iterable)
+    g = groupby([e["class"] for e in examples])
     return next(g, True) and not next(g, False)
+
+def misclassification(probs):
+    return 1 - max(probs.values())
 
 def entropy(probs):
     H = 0
@@ -63,7 +68,7 @@ def gini(probs):
         G += P*(1 - P)
     return G
 
-def impurity(arg, examples, measure):
+def impurity(examples, measure):
     totals = {}
     for ex in examples:
         cl = ex["class"]
@@ -77,14 +82,14 @@ def impurity(arg, examples, measure):
 
     return measure(probs)
 
-def importance(arg, examples, attributes, measure):
+def importance(f, examples, features, measure):
     # Information Gain
-    before = impurity(arg, examples, measure)
+    before = impurity(examples, measure)
     after = float("inf")
     split = None
-    if isinstance(attributes[arg], tuple):
+    if isinstance(features[f], tuple):
         # Handle numeric data
-        exs = sorted(examples, key=lambda e: e[arg])
+        exs = sorted(examples, key=lambda e: e[f])
         mids = []
         for i in range(len(exs) - 1):
             e1 = exs[i]
@@ -92,57 +97,59 @@ def importance(arg, examples, attributes, measure):
             cl1 = e1["class"]
             cl2 = e2["class"]
             if cl1 != cl2:
-                mids.append((e1[arg] + e2[arg])/2)
+                mids.append((e1[f] + e2[f])/2)
         for s in mids:
-            low_exs = [e for e in exs if e[arg] <= s]
-            high_exs = [e for e in exs if e[arg] > s]
-            aft = (len(low_exs)/len(examples))*impurity(arg, low_exs, measure) + \
-                (len(high_exs)/len(examples))*impurity(arg, high_exs, measure)
+            low_exs = [e for e in exs if e[f] <= s]
+            high_exs = [e for e in exs if e[f] > s]
+            aft = (len(low_exs)/len(examples))*impurity(low_exs, measure) + \
+                (len(high_exs)/len(examples))*impurity(high_exs, measure)
             if aft < after:
                 after = aft
                 split = s
     else:
         after = 0
-        for v in attributes[arg]:
-            exs = [e for e in examples if e[arg] == v]
-            after += (len(exs)/len(examples))*impurity(arg, exs, measure)
+        for v in features[f]:
+            exs = [e for e in examples if e[f] == v]
+            after += (len(exs)/len(examples))*impurity(exs, measure)
     return before - after, split
 
-def argmax(args, examples, impurity_measure):
-    A = None
+def argmax(features, examples, impurity_measure):
+    F = None
     V = float("-inf")
     split = None
-    for a in args:
-        v, s = importance(a, examples, args, impurity_measure)
+    for f in features:
+        v, s = importance(f, examples, features, impurity_measure)
         if v > V:
-            A, V, split = a, v, s
-    return A, split
+            F, V, split = f, v, s
+    return F, split
 
-def learn_decision_tree(examples, attributes, parent_examples, impurity_measure, max_depth=float("inf"), depth=0):
+def learn_decision_tree(examples, features, parent_examples, impurity_measure, min_examples=400):
     if not examples:
         return Decision_Tree(plurality_value(parent_examples))
     elif all_equal(examples):
         return Decision_Tree(examples[0]["class"])
-    elif not attributes or depth == max_depth:
+    elif not features or len(examples) < min_examples:
         return Decision_Tree(plurality_value(examples))
     else:
-        A, split = argmax(attributes, examples, impurity_measure)
-        tree = Decision_Tree(A)
+        keys = random.sample(list(features), math.floor(math.log2(len(features) + 1)))
+        feature_subset = {k: features[k] for k in keys}
+        F, split = argmax(feature_subset, examples, impurity_measure)
+        tree = Decision_Tree(F)
         if split:
             # Handle numeric data
             split = round(split, 9)
-            low_exs = [e for e in examples if e[A] <= split]
-            low_subtree = learn_decision_tree(low_exs, attributes, examples, impurity_measure, max_depth, depth + 1)
+            low_exs = [e for e in examples if e[F] <= split]
+            low_subtree = learn_decision_tree(low_exs, features, examples, impurity_measure, min_examples)
             tree.add_branch({"branch_label": "<=" + str(split), "node": low_subtree})
 
-            high_exs = [e for e in examples if e[A] > split]
-            high_subtree = learn_decision_tree(high_exs, attributes, examples, impurity_measure, max_depth, depth + 1)
+            high_exs = [e for e in examples if e[F] > split]
+            high_subtree = learn_decision_tree(high_exs, features, examples, impurity_measure, min_examples)
             tree.add_branch({"branch_label": ">" + str(split), "node": high_subtree})
         else:
-            for v in attributes[A]:
-                attrs = {k: val for k, val in attributes.items() if k != A}
-                exs = [e for e in examples if e[A] == v]
-                subtree = learn_decision_tree(exs, attrs, examples, impurity_measure, max_depth, depth + 1)
+            for v in features[F]:
+                feats = {k: val for k, val in features.items() if k != F}
+                exs = [e for e in examples if e[F] == v]
+                subtree = learn_decision_tree(exs, feats, examples, impurity_measure, min_examples)
                 tree.add_branch({"branch_label": v, "node": subtree})
         return tree
 
@@ -161,7 +168,7 @@ def n_folds(N, examples):
     return folds
 
 if __name__ == "__main__":
-    restaurant_attributes = {
+    restaurant_features = {
         "Alt":      ["Yes", "No"],
         "Bar":      ["Yes", "No"],
         "Fri":      ["Yes", "No"],
@@ -188,7 +195,7 @@ if __name__ == "__main__":
         {"Alt": "Yes",  "Bar": "Yes",   "Fri": "Yes",   "Hun": "Yes",   "Pat": "Full", "Price": "$",    "Rain": "No",   "Res": "No",    "Type": "Burger",   "Est": "30-60",    "class": "Yes"}
     ]
 
-    proj1_attributes = {
+    proj1_features = {
         "x": (0, 1),
         "y": (0, 1)
     }
@@ -204,7 +211,7 @@ if __name__ == "__main__":
             "class":    int(values[0])
         })
 
-    zoo_attributes = {
+    zoo_features = {
         "hair":     [True, False],
         "feathers": [True, False],
         "eggs":     [True, False],
@@ -249,7 +256,7 @@ if __name__ == "__main__":
             "class":    classes[int(values[17]) - 1]
         })
 
-    letter_attributes = {
+    letter_features = {
         "x-box horizontal position of box":     (0, 15),
         "y-box vertical position of box":       (0, 15),
         "width width of box":                   (0, 15),
@@ -298,50 +305,62 @@ if __name__ == "__main__":
     # max_depth = 5
     # restaurant_folds = n_folds(N, restaurant_examples)
     # restaurant_train_accuracies = restaurant_test_accuracies = 0
-    # for fold in restaurant_folds:
-    #     restaurant_tree = learn_decision_tree(fold["train"], restaurant_attributes, [], entropy, 5)
+    # for fold in tqdm(restaurant_folds):
+    #     restaurant_tree = learn_decision_tree(fold["train"], restaurant_features, [], entropy, 5)
     #     restaurant_train_accuracies += restaurant_tree.accuracy(fold["train"])
     #     restaurant_test_accuracies += restaurant_tree.accuracy(fold["test"])
     # print("Average training set accuracy: " + str(round(restaurant_train_accuracies / N, 2)) + "%")
     # print("Average testing set accuracy: " + str(round(restaurant_test_accuracies / N, 2)) + "%")
     # print()
 
-    print("Proj1")
+    # print("Proj1")
+    # N = 5
+    # max_depth = 5
+    # proj1_folds = n_folds(N, proj1_examples)
+    # proj1_train_accuracies = proj1_test_accuracies = 0
+    # for fold in tqdm(proj1_folds):
+    #     proj1_tree = learn_decision_tree(fold["train"], proj1_features, [], entropy, max_depth)
+    #     proj1_train_accuracies += proj1_tree.accuracy(fold["train"])
+    #     proj1_test_accuracies += proj1_tree.accuracy(fold["test"])
+    # print("Average training set accuracy: " + str(round(proj1_train_accuracies / N, 2)) + "%")
+    # print("Average testing set accuracy: " + str(round(proj1_test_accuracies / N, 2)) + "%")
+    # print()
+
     N = 5
-    max_depth = 5
+    num_trees = 50
     proj1_folds = n_folds(N, proj1_examples)
     proj1_train_accuracies = proj1_test_accuracies = 0
-    for fold in proj1_folds:
-        proj1_tree = learn_decision_tree(fold["train"], proj1_attributes, [], entropy, max_depth)
-        proj1_train_accuracies += proj1_tree.accuracy(fold["train"])
-        proj1_test_accuracies += proj1_tree.accuracy(fold["test"])
-    print("Average training set accuracy: " + str(round(proj1_train_accuracies / N, 2)) + "%")
-    print("Average testing set accuracy: " + str(round(proj1_test_accuracies / N, 2)) + "%")
+    proj1_tree = learn_decision_tree(proj1_folds[0]["train"], proj1_features, [], entropy)
+    print(proj1_tree)
+    proj1_train_accuracies += proj1_tree.accuracy(proj1_folds[0]["train"])
+    proj1_test_accuracies += proj1_tree.accuracy(proj1_folds[0]["test"])
+    print("Average training set accuracy: " + str(round(proj1_train_accuracies, 2)) + "%")
+    print("Average testing set accuracy: " + str(round(proj1_test_accuracies, 2)) + "%")
     print()
 
-    print("Zoo")
-    N = 5
-    max_depth = 5
-    zoo_folds = n_folds(N, zoo_examples)
-    zoo_train_accuracies = zoo_test_accuracies = 0
-    for fold in zoo_folds:
-        zoo_tree = learn_decision_tree(fold["train"], zoo_attributes, [], entropy, max_depth)
-        zoo_train_accuracies += zoo_tree.accuracy(fold["train"])
-        zoo_test_accuracies += zoo_tree.accuracy(fold["test"])
-    print("Average training set accuracy: " + str(round(zoo_train_accuracies / N, 2)) + "%")
-    print("Average testing set accuracy: " + str(round(zoo_test_accuracies / N, 2)) + "%")
-    print()
+    # print("Zoo")
+    # N = 5
+    # max_depth = 5
+    # zoo_folds = n_folds(N, zoo_examples)
+    # zoo_train_accuracies = zoo_test_accuracies = 0
+    # for fold in tqdm(zoo_folds):
+    #     zoo_tree = learn_decision_tree(fold["train"], zoo_features, [], entropy, max_depth)
+    #     zoo_train_accuracies += zoo_tree.accuracy(fold["train"])
+    #     zoo_test_accuracies += zoo_tree.accuracy(fold["test"])
+    # print("Average training set accuracy: " + str(round(zoo_train_accuracies / N, 2)) + "%")
+    # print("Average testing set accuracy: " + str(round(zoo_test_accuracies / N, 2)) + "%")
+    # print()
 
-    print("Letters")
-    N = 5
-    max_depth = 5
-    letter_sample = random.sample(letter_examples, 500)
-    letter_folds = n_folds(N, letter_sample)
-    letter_train_accuracies = letter_test_accuracies = 0
-    for fold in letter_folds:
-        letter_tree = learn_decision_tree(fold["train"], letter_attributes, [], entropy, max_depth)
-        letter_train_accuracies += letter_tree.accuracy(fold["train"])
-        letter_test_accuracies += letter_tree.accuracy(fold["test"])
-    print("Average training set accuracy: " + str(round(letter_train_accuracies / N, 2)) + "%")
-    print("Average testing set accuracy: " + str(round(letter_test_accuracies / N, 2)) + "%")
-    print()
+    # print("Letters")
+    # N = 5
+    # max_depth = 5
+    # letter_sample = random.sample(letter_examples, 500)
+    # letter_folds = n_folds(N, letter_sample)
+    # letter_train_accuracies = letter_test_accuracies = 0
+    # for fold in tqdm(letter_folds):
+    #     letter_tree = learn_decision_tree(fold["train"], letter_features, [], entropy, max_depth)
+    #     letter_train_accuracies += letter_tree.accuracy(fold["train"])
+    #     letter_test_accuracies += letter_tree.accuracy(fold["test"])
+    # print("Average training set accuracy: " + str(round(letter_train_accuracies / N, 2)) + "%")
+    # print("Average testing set accuracy: " + str(round(letter_test_accuracies / N, 2)) + "%")
+    # print()
