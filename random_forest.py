@@ -1,5 +1,10 @@
+import dataset
 from itertools import *
 import math
+import matplotlib.pyplot as plt
+
+import numpy as np
+import pandas as pd
 import random
 from tqdm import tqdm
 
@@ -194,15 +199,22 @@ def accuracy(forest, examples):
     return accuracy/len(examples)*100
 
 if __name__ == "__main__":
+    spirals = dataset.spirals(n=1000, cycles=2, sd=.05)
+    # plt.scatter(spirals["x"], spirals["y"], s=5, c=spirals["class"])
+    # blobs = dataset.blobs(200, [np.array([1, 2]), np.array([5, 6])], [np.array([[0.25, 0], [0, 0.25]])] * 2)
+    # plt.scatter(blobs[0], blobs[1], s=5, c=blobs["class"])
+    # plt.show()
     N = 5
-    examples = {}
-    features = {}
-    folds = n_folds(N, examples)
-    train_accuracies = test_accuracies = 0
-    for fold in folds:
-        forest = random_forest(fold["train"], features, [], entropy, num_trees=50)
-        train_accuracies += accuracy(forest, fold["train"])
-        test_accuracies += accuracy(forest, fold["test"])
-    print("Average training set accuracy: " + str(round(train_accuracies / N, 2)) + "%")
-    print("Average testing set accuracy: " + str(round(test_accuracies / N, 2)) + "%")
-    print()
+    print(spirals)
+    examples = spirals.to_dict()
+    print(examples)
+    # features = {}
+    # folds = n_folds(N, examples)
+    # train_accuracies = test_accuracies = 0
+    # for fold in folds:
+    #     forest = random_forest(fold["train"], features, [], entropy, num_trees=50)
+    #     train_accuracies += accuracy(forest, fold["train"])
+    #     test_accuracies += accuracy(forest, fold["test"])
+    # print("Average training set accuracy: " + str(round(train_accuracies / N, 2)) + "%")
+    # print("Average testing set accuracy: " + str(round(test_accuracies / N, 2)) + "%")
+    # print()
