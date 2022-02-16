@@ -34,7 +34,7 @@ def spirals(n, cycles=2, sd=0):
     df["class"] = df["class"].astype(int)
     # plt.scatter(df["x"], df["y"], s=5, c=df["class"])
     # plt.show()
-    df.to_csv("spirals.csv")  # save dataset to "spirals.csv" in current directory
+    df.to_csv("datasets/spirals.csv")  # save dataset to "spirals.csv" in current directory
     return df
 
 
@@ -48,7 +48,7 @@ def blobs(n, center, cov):
         holder.append(np.concatenate((np.random.multivariate_normal(mean, sigma, n), np.ones((n, 1), dtype=int) * cl), axis=1))
     df = pd.DataFrame(np.random.permutation(np.concatenate(tuple(holder), axis=0)), columns=list(range(center[0].shape[0])) + ["class"])
     df["class"] = df["class"].astype(int)
-    df.to_csv("blobs.csv")
+    df.to_csv("datasets/blobs.csv")
     return df
 
 
