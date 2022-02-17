@@ -87,19 +87,22 @@ def impurity(examples, measure):
 
     return measure(probs)
 
-def importance(f, examples, features, measure):
+def importance(f, examples, features, measure, min_prop):
     # Information Gain
     before = impurity(examples, measure)
-    after = float("inf")
+    after = before
     split = None
     if isinstance(features[f], tuple):
         # Handle numeric data
         exs = sorted(examples, key=lambda e: e[f])
-        # TODO: Take random subset of range
-        # L = exs[0][f]
-        # H = exs[-1][f]
-        # line = random.uniform(L, H)
-        # greater = random.getrandbits(1)
+
+        # Take random subset of data
+        if min_prop:
+            ends = [random.randint(0, len(exs) - 1), random.randint(0, len(exs))]
+            while(max(ends) - min(ends) < max(2, min_prop*len(exs))):
+                ends = [random.randint(0, len(exs) - 1), random.randint(0, len(exs))]
+            exs = exs[min(ends):max(ends)]
+
         mids = []
         for i in range(len(exs) - 1):
             e1 = exs[i]
@@ -123,17 +126,17 @@ def importance(f, examples, features, measure):
             after += (len(exs)/len(examples))*impurity(exs, measure)
     return before - after, split
 
-def argmax(features, examples, impurity_measure):
+def argmax(features, examples, impurity_measure, min_prop):
     F = None
     V = float("-inf")
     split = None
     for f in features:
-        v, s = importance(f, examples, features, impurity_measure)
+        v, s = importance(f, examples, features, impurity_measure, min_prop)
         if v > V:
             F, V, split = f, v, s
     return F, split
 
-def learn_decision_tree(examples, features, parent_examples, impurity_measure, min_examples=1, max_depth=float("inf"), depth=0):
+def learn_decision_tree(examples, features, parent_examples, impurity_measure, min_prop=0, min_examples=1, max_depth=float("inf"), depth=0):
     if not examples:
         return Decision_Tree(plurality_value(parent_examples))
     elif all_equal(examples):
@@ -145,30 +148,30 @@ def learn_decision_tree(examples, features, parent_examples, impurity_measure, m
         keys = random.sample(list(features), math.floor(math.log2(len(features) + 1)))
         feature_subset = {k: features[k] for k in keys}
 
-        F, split = argmax(feature_subset, examples, impurity_measure)
+        F, split = argmax(feature_subset, examples, impurity_measure, min_prop)
         tree = Decision_Tree(F)
         if split:
             # Handle numeric data
             split = round(split, 9)
             low_exs = [e for e in examples if e[F] <= split]
-            low_subtree = learn_decision_tree(low_exs, features, examples, impurity_measure, min_examples, max_depth, depth + 1)
+            low_subtree = learn_decision_tree(low_exs, features, examples, impurity_measure, min_prop, min_examples, max_depth, depth + 1)
             tree.add_branch({"branch_label": "<=" + str(split), "node": low_subtree})
 
             high_exs = [e for e in examples if e[F] > split]
-            high_subtree = learn_decision_tree(high_exs, features, examples, impurity_measure, min_examples, max_depth, depth + 1)
+            high_subtree = learn_decision_tree(high_exs, features, examples, impurity_measure, min_prop, min_examples, max_depth, depth + 1)
             tree.add_branch({"branch_label": ">" + str(split), "node": high_subtree})
         else:
             for v in features[F]:
                 feats = {k: val for k, val in features.items() if k != F}
                 exs = [e for e in examples if e[F] == v]
-                subtree = learn_decision_tree(exs, feats, examples, impurity_measure, min_examples, max_depth, depth + 1)
+                subtree = learn_decision_tree(exs, feats, examples, impurity_measure, min_prop, min_examples, max_depth, depth + 1)
                 tree.add_branch({"branch_label": v, "node": subtree})
         return tree
 
-def random_forest(examples, features, parent_examples, impurity_measure, num_trees=50, min_examples=1, max_depth=float("Inf")):
+def random_forest(examples, features, parent_examples, impurity_measure, min_prop=0, num_trees=50, min_examples=1, max_depth=float("Inf")):
     forest = []
     for _ in tqdm(range(num_trees), desc="Generating Forest"):
-        forest.append(learn_decision_tree(examples, features, parent_examples, impurity_measure, min_examples, max_depth))
+        forest.append(learn_decision_tree(examples, features, parent_examples, impurity_measure, min_prop, min_examples, max_depth))
     return forest
 
 def n_folds(N, examples):
@@ -199,22 +202,25 @@ def accuracy(forest, examples):
     return accuracy/len(examples)*100
 
 if __name__ == "__main__":
-    spirals = dataset.spirals(n=1000, cycles=2, sd=.05)
-    # plt.scatter(spirals["x"], spirals["y"], s=5, c=spirals["class"])
-    # blobs = dataset.blobs(200, [np.array([1, 2]), np.array([5, 6])], [np.array([[0.25, 0], [0, 0.25]])] * 2)
+    spirals = dataset.spirals(n=200, cycles=2, sd=.05)
+    examples = spirals.to_dict(orient="records")
+    features = {"x": (0, 1), "y": (0, 1)}
+    plt.scatter(spirals["x"], spirals["y"], s=5, c=spirals["class"])
+    plt.show()
+
+    # blobs = dataset.blobs(200, [np.array([1, 1]), np.array([3, 3])],[np.array([[0.75, 0], [0, 0.75]]), np.array([[0.25, 0], [0, 0.25]])])
+    # examples = blobs.to_dict(orient="records")
+    # features = {0: (0, 1), 1: (0, 1)}
     # plt.scatter(blobs[0], blobs[1], s=5, c=blobs["class"])
     # plt.show()
+
     N = 5
-    print(spirals)
-    examples = spirals.to_dict()
-    print(examples)
-    # features = {}
-    # folds = n_folds(N, examples)
-    # train_accuracies = test_accuracies = 0
-    # for fold in folds:
-    #     forest = random_forest(fold["train"], features, [], entropy, num_trees=50)
-    #     train_accuracies += accuracy(forest, fold["train"])
-    #     test_accuracies += accuracy(forest, fold["test"])
-    # print("Average training set accuracy: " + str(round(train_accuracies / N, 2)) + "%")
-    # print("Average testing set accuracy: " + str(round(test_accuracies / N, 2)) + "%")
-    # print()
+    folds = n_folds(N, examples)
+    train_accuracies = test_accuracies = 0
+    for fold in folds:
+        forest = random_forest(fold["train"], features, [], entropy, num_trees=50, min_examples=10)
+        train_accuracies += accuracy(forest, fold["train"])
+        test_accuracies += accuracy(forest, fold["test"])
+    print("Average training set accuracy: " + str(round(train_accuracies / N, 2)) + "%")
+    print("Average testing set accuracy: " + str(round(test_accuracies / N, 2)) + "%")
+    print()
