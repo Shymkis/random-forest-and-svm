@@ -32,8 +32,6 @@ def spirals(n, cycles=2, sd=0):
     x[index_2, :] = -one_spiral(n=len(index_2), cycles=cycles, sd=sd)
     df = pd.DataFrame(np.concatenate((x, cl), axis=1), columns=["x", "y", "class"])
     df["class"] = df["class"].astype(int)
-    # plt.scatter(df["x"], df["y"], s=5, c=df["class"])
-    # plt.show()
     df.to_csv("datasets/spirals.csv")  # save dataset to "spirals.csv" in current directory
     return df
 
