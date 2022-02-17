@@ -1,10 +1,8 @@
-import dataset
 from itertools import *
 import math
 import matplotlib.pyplot as plt
-
 import numpy as np
-import pandas as pd
+import preprocess
 import random
 from tqdm import tqdm
 
@@ -99,7 +97,7 @@ def importance(f, examples, features, measure, min_prop):
         # Take random subset of data
         if min_prop:
             ends = [random.randint(0, len(exs) - 1), random.randint(0, len(exs))]
-            while(max(ends) - min(ends) < max(2, min_prop*len(exs))):
+            while max(ends) - min(ends) < max(2, min_prop*len(exs)):
                 ends = [random.randint(0, len(exs) - 1), random.randint(0, len(exs))]
             exs = exs[min(ends):max(ends)]
 
@@ -202,19 +200,9 @@ def accuracy(forest, examples):
     return accuracy/len(examples)*100
 
 if __name__ == "__main__":
-    spirals = dataset.spirals(n=200, cycles=2, sd=.05)
-    examples = spirals.to_dict(orient="records")
-    features = {"x": (0, 1), "y": (0, 1)}
-    plt.scatter(spirals["x"], spirals["y"], s=5, c=spirals["class"])
-    plt.show()
-
-    # blobs = dataset.blobs(200, [np.array([1, 1]), np.array([3, 3])],[np.array([[0.75, 0], [0, 0.75]]), np.array([[0.25, 0], [0, 0.25]])])
-    # examples = blobs.to_dict(orient="records")
-    # features = {0: (0, 1), 1: (0, 1)}
-    # plt.scatter(blobs[0], blobs[1], s=5, c=blobs["class"])
-    # plt.show()
-
     N = 5
+    features, examples = preprocess.blobs(plot=True)
+    # features, examples = preprocess.spirals(plot=True)
     folds = n_folds(N, examples)
     train_accuracies = test_accuracies = 0
     for fold in folds:
