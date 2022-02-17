@@ -61,7 +61,6 @@ def adults():
 def blobs(plot=False):
     # dataset.blobs(200,[np.array([1, 1]), np.array([3, 1]), np.array([2, 4])],[np.array([[0.5, 0], [0, 0.5]]), np.array([[0.25, 0], [0, 0.25]]), np.array([[1, 0], [0, 1]])])
     data = pd.read_csv("datasets/blobs.csv", index_col=0)
-    print(data)
     examples = data.to_dict(orient="records")
     features = {"0": (0, 1), "1": (0, 1)}
     if plot:
@@ -89,7 +88,7 @@ def letters():
         "yegvx correlation of y-ege with x":    (0, 15)
     }
     examples = []
-    train_file = open("letter-recognition.data", "r")
+    train_file = open("datasets/letter-recognition.data", "r")
     lines = train_file.readlines()
     for line in lines:
         line = line[:-1]
@@ -113,7 +112,7 @@ def letters():
             "yegvx correlation of y-ege with x":    int(values[16]),
             "class":                                str(values[0])
         })
-    return features, examples
+    return features, examples[:500]
 
 def spirals(plot=False):
     # dataset.spirals(1000, 2, 0.5)
@@ -145,7 +144,7 @@ def zoo():
         "catsize":  [True, False]
     }
     examples = []
-    train_file = open("zoo.data", "r")
+    train_file = open("datasets/zoo.data", "r")
     lines = train_file.readlines()
     classes = ["mammal", "bird", "reptile", "fish", "amphibian", "insect", "invertebrate"]
     for line in lines:

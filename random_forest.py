@@ -1,3 +1,4 @@
+from doctest import Example
 from itertools import *
 import math
 import matplotlib.pyplot as plt
@@ -5,6 +6,7 @@ import numpy as np
 import preprocess
 import random
 from tqdm import tqdm
+import time
 
 class Decision_Tree:
     def __init__(self, node_label, branches=None):
@@ -168,7 +170,7 @@ def learn_decision_tree(examples, features, parent_examples, impurity_measure, m
 
 def random_forest(examples, features, parent_examples, impurity_measure, min_prop=0, num_trees=50, min_examples=1, max_depth=float("Inf")):
     forest = []
-    for _ in tqdm(range(num_trees), desc="Generating Forest"):
+    for _ in range(num_trees):
         forest.append(learn_decision_tree(examples, features, parent_examples, impurity_measure, min_prop, min_examples, max_depth))
     return forest
 
@@ -188,7 +190,7 @@ def n_folds(N, examples):
 
 def accuracy(forest, examples):
     accuracy = 0
-    for ex in tqdm(examples, desc="Calculating Accuracy"):
+    for ex in examples:
         votes = {}
         for tree in forest:
             prediction = tree.decide(ex)
@@ -201,14 +203,47 @@ def accuracy(forest, examples):
 
 if __name__ == "__main__":
     N = 5
-    features, examples = preprocess.blobs(plot=True)
+    # features, examples = preprocess.blobs(plot=True)
     # features, examples = preprocess.spirals(plot=True)
-    folds = n_folds(N, examples)
-    train_accuracies = test_accuracies = 0
-    for fold in folds:
-        forest = random_forest(fold["train"], features, [], entropy, num_trees=50, min_examples=10)
-        train_accuracies += accuracy(forest, fold["train"])
-        test_accuracies += accuracy(forest, fold["test"])
-    print("Average training set accuracy: " + str(round(train_accuracies / N, 2)) + "%")
-    print("Average testing set accuracy: " + str(round(test_accuracies / N, 2)) + "%")
-    print()
+    features, examples = preprocess.letters()
+
+    y1 = []
+    y2 = []
+    y3 = []
+    x = []
+    for i in tqdm(range(1, 4)):
+        i*=50
+        folds = n_folds(N, examples)
+        train_accuracies = test_accuracies = 0
+        start = time.time()
+        for fold in folds:
+            forest = random_forest(fold["train"], features, [], entropy, num_trees=i, max_depth=9)
+            train_accuracies += accuracy(forest, fold["train"])
+            test_accuracies += accuracy(forest, fold["test"])
+        end = time.time()
+        avg_time = round((end - start) / N, 2)
+        avg_train = round(train_accuracies / N, 2)
+        avg_test = round(test_accuracies / N, 2)
+        # print("Average training set accuracy: " + str(avg_train) + "%")
+        # print("Average testing set accuracy: " + str(avg_test) + "%")
+        # print("Average time elapsed: " + str(avg_time))
+        y1.append(avg_train)
+        y2.append(avg_test)
+        y3.append(avg_time)
+        x.append(i)
+
+    plot1 = plt.figure(1)
+    plt.plot(x, y1, label="Average Train Accuracy")
+    plt.plot(x, y2, label="Average Test Accuracy")
+    plt.title("Accuracy vs. Number of Trees, Letters, Tuned")
+    plt.xlabel("Number of Trees")
+    plt.ylabel("Accuracy (%)")
+    plt.legend()
+
+    plot2 = plt.figure(2)
+    plt.plot(x, y3, label="Average Time Elapsed")
+    plt.title("Time Elapsed vs. Number of Trees, Letters, Tuned")
+    plt.xlabel("Number of Trees")
+    plt.ylabel("Time Elapsed (s)")
+
+    plt.show()
