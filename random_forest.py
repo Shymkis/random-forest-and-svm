@@ -170,7 +170,7 @@ def learn_decision_tree(examples, features, parent_examples, impurity_measure, m
 
 def random_forest(examples, features, parent_examples, impurity_measure, min_prop=0, num_trees=50, min_examples=1, max_depth=float("Inf")):
     forest = []
-    for _ in range(num_trees):
+    for _ in tqdm(range(num_trees), desc="Generating Forest"):
         forest.append(learn_decision_tree(examples, features, parent_examples, impurity_measure, min_prop, min_examples, max_depth))
     return forest
 
@@ -203,30 +203,33 @@ def accuracy(forest, examples):
 
 if __name__ == "__main__":
     N = 5
+    # features, examples = preprocess.adults()
     # features, examples = preprocess.blobs(plot=True)
+    features, examples = preprocess.digits()
+    # features, examples = preprocess.letters()
     # features, examples = preprocess.spirals(plot=True)
-    features, examples = preprocess.letters()
+    # features, examples = preprocess.zoo()
 
     y1 = []
     y2 = []
     y3 = []
     x = []
-    for i in tqdm(range(1, 4)):
+    for i in range(1, 4):
         i*=50
         folds = n_folds(N, examples)
         train_accuracies = test_accuracies = 0
         start = time.time()
         for fold in folds:
-            forest = random_forest(fold["train"], features, [], entropy, num_trees=i, max_depth=9)
+            forest = random_forest(fold["train"], features, [], entropy, num_trees=i, max_depth=6)
             train_accuracies += accuracy(forest, fold["train"])
             test_accuracies += accuracy(forest, fold["test"])
         end = time.time()
         avg_time = round((end - start) / N, 2)
         avg_train = round(train_accuracies / N, 2)
         avg_test = round(test_accuracies / N, 2)
-        # print("Average training set accuracy: " + str(avg_train) + "%")
-        # print("Average testing set accuracy: " + str(avg_test) + "%")
-        # print("Average time elapsed: " + str(avg_time))
+        print("Average training set accuracy: " + str(avg_train) + "%")
+        print("Average testing set accuracy: " + str(avg_test) + "%")
+        print("Average time elapsed: " + str(avg_time))
         y1.append(avg_train)
         y2.append(avg_test)
         y3.append(avg_time)
@@ -235,14 +238,14 @@ if __name__ == "__main__":
     plot1 = plt.figure(1)
     plt.plot(x, y1, label="Average Train Accuracy")
     plt.plot(x, y2, label="Average Test Accuracy")
-    plt.title("Accuracy vs. Number of Trees, Letters, Tuned")
+    plt.title("Accuracy vs. Number of Trees, Digits, Tuned")
     plt.xlabel("Number of Trees")
     plt.ylabel("Accuracy (%)")
     plt.legend()
 
     plot2 = plt.figure(2)
     plt.plot(x, y3, label="Average Time Elapsed")
-    plt.title("Time Elapsed vs. Number of Trees, Letters, Tuned")
+    plt.title("Time Elapsed vs. Number of Trees, Digits, Tuned")
     plt.xlabel("Number of Trees")
     plt.ylabel("Time Elapsed (s)")
 

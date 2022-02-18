@@ -28,8 +28,7 @@ def adults():
                             "Honduras", "Philippines", "Italy", "Poland", "Jamaica", "Vietnam", "Mexico", "Portugal",
                             "Ireland", "France", "Dominican-Republic", "Laos", "Ecuador", "Taiwan", "Haiti", "Columbia",
                             "Hungary", "Guatemala", "Nicaragua", "Scotland", "Thailand", "Yugoslavia", "El-Salvador",
-                            "Trinadad&Tobago", "Peru", "Hong", "Holand-Netherlands"],
-        "class": [">50K", "<=50K"]
+                            "Trinadad&Tobago", "Peru", "Hong", "Holand-Netherlands"]
     }
     examples = []
     with open("datasets/adult.data", "r") as train_file:
@@ -56,7 +55,7 @@ def adults():
                     "class": values[14]
                 }
             )
-    return features, examples
+    return features, examples[:500]
 
 def blobs(plot=False):
     # dataset.blobs(200,[np.array([1, 1]), np.array([3, 1]), np.array([2, 4])],[np.array([[0.5, 0], [0, 0.5]]), np.array([[0.25, 0], [0, 0.25]]), np.array([[1, 0], [0, 1]])])
@@ -67,6 +66,12 @@ def blobs(plot=False):
         plt.scatter(data["0"], data["1"], s=5, c=data["class"])
         plt.show()
     return features, examples
+
+def digits():
+    data = pd.read_csv("datasets/digits.csv").rename(columns={"label": "class"})
+    examples = data.to_dict(orient="records")
+    features = {c: (0, 255) for c in data.columns if c.startswith("pixel")}
+    return features, examples[:250]
 
 def letters():
     features = {
