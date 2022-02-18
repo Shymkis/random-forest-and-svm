@@ -55,7 +55,7 @@ def adults():
                     "class": values[14]
                 }
             )
-    return features, examples[:500]
+    return features, examples[:2500]
 
 def blobs(plot=False):
     # dataset.blobs(200,[np.array([1, 1]), np.array([3, 1]), np.array([2, 4])],[np.array([[0.5, 0], [0, 0.5]]), np.array([[0.25, 0], [0, 0.25]]), np.array([[1, 0], [0, 1]])])
@@ -120,7 +120,7 @@ def letters():
     return features, examples[:500]
 
 def spirals(plot=False):
-    # dataset.spirals(1000, 2, 0.5)
+    # dataset.spirals(1000, 2, 0.075)
     data = pd.read_csv("datasets/spirals.csv", index_col=0)
     features = {"x": (0, 1), "y": (0, 1)}
     examples = data.to_dict(orient="records")

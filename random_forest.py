@@ -204,49 +204,49 @@ def accuracy(forest, examples):
 if __name__ == "__main__":
     N = 5
     # features, examples = preprocess.adults()
-    # features, examples = preprocess.blobs(plot=True)
-    features, examples = preprocess.digits()
+    # features, examples = preprocess.blobs()
+    # features, examples = preprocess.digits()
     # features, examples = preprocess.letters()
-    # features, examples = preprocess.spirals(plot=True)
-    # features, examples = preprocess.zoo()
+    # features, examples = preprocess.spirals()
+    features, examples = preprocess.zoo()
 
-    y1 = []
-    y2 = []
-    y3 = []
-    x = []
-    for i in range(1, 4):
-        i*=50
-        folds = n_folds(N, examples)
-        train_accuracies = test_accuracies = 0
-        start = time.time()
-        for fold in folds:
-            forest = random_forest(fold["train"], features, [], entropy, num_trees=i, max_depth=6)
-            train_accuracies += accuracy(forest, fold["train"])
-            test_accuracies += accuracy(forest, fold["test"])
-        end = time.time()
-        avg_time = round((end - start) / N, 2)
-        avg_train = round(train_accuracies / N, 2)
-        avg_test = round(test_accuracies / N, 2)
-        print("Average training set accuracy: " + str(avg_train) + "%")
-        print("Average testing set accuracy: " + str(avg_test) + "%")
-        print("Average time elapsed: " + str(avg_time))
-        y1.append(avg_train)
-        y2.append(avg_test)
-        y3.append(avg_time)
-        x.append(i)
+    folds = n_folds(N, examples)
+    train_accuracies = test_accuracies = 0
+    start = time.time()
+    for fold in folds:
+        forest = random_forest(fold["train"], features, [], entropy, num_trees=150)
+        train_accuracies += accuracy(forest, fold["train"])
+        test_accuracies += accuracy(forest, fold["test"])
+    end = time.time()
+    avg_time = round((end - start) / N, 2)
+    avg_train = round(train_accuracies / N, 2)
+    avg_test = round(test_accuracies / N, 2)
+    print("Average training set accuracy: " + str(avg_train) + "%")
+    print("Average testing set accuracy: " + str(avg_test) + "%")
+    print("Average time elapsed: " + str(avg_time))
 
-    plot1 = plt.figure(1)
-    plt.plot(x, y1, label="Average Train Accuracy")
-    plt.plot(x, y2, label="Average Test Accuracy")
-    plt.title("Accuracy vs. Number of Trees, Digits, Tuned")
-    plt.xlabel("Number of Trees")
-    plt.ylabel("Accuracy (%)")
-    plt.legend()
+    # y1 = []
+    # y2 = []
+    # y3 = []
+    # x = []
+    # for i in range(1, 4):
+        # y1.append(avg_train)
+        # y2.append(avg_test)
+        # y3.append(avg_time)
+        # x.append(i)
 
-    plot2 = plt.figure(2)
-    plt.plot(x, y3, label="Average Time Elapsed")
-    plt.title("Time Elapsed vs. Number of Trees, Digits, Tuned")
-    plt.xlabel("Number of Trees")
-    plt.ylabel("Time Elapsed (s)")
+    # plot1 = plt.figure(1)
+    # plt.plot(x, y1, label="Average Train Accuracy")
+    # plt.plot(x, y2, label="Average Test Accuracy")
+    # plt.title("Accuracy vs. Number of Trees, Digits, Tuned")
+    # plt.xlabel("Number of Trees")
+    # plt.ylabel("Accuracy (%)")
+    # plt.legend()
 
-    plt.show()
+    # plot2 = plt.figure(2)
+    # plt.plot(x, y3, label="Average Time Elapsed")
+    # plt.title("Time Elapsed vs. Number of Trees, Digits, Tuned")
+    # plt.xlabel("Number of Trees")
+    # plt.ylabel("Time Elapsed (s)")
+
+    # plt.show()
