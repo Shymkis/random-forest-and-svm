@@ -59,6 +59,8 @@ def all_equal(examples):
     return next(g, True) and not next(g, False)
 
 def misclassification(probs):
+    if len(probs) == 0:
+        return 0
     return 1 - max(probs.values())
 
 def entropy(probs):
@@ -205,15 +207,17 @@ if __name__ == "__main__":
     N = 5
     # features, examples = preprocess.adults()
     # features, examples = preprocess.blobs()
-    # features, examples = preprocess.digits()
+    features, examples = preprocess.digits()
     # features, examples = preprocess.letters()
     # features, examples = preprocess.spirals()
-    features, examples = preprocess.zoo()
+    # features, examples = preprocess.zoo()
 
     folds = n_folds(N, examples)
     train_accuracies = test_accuracies = 0
     start = time.time()
     for fold in folds:
+        # forest = random_forest(fold["train"], features, [], misclassification, num_trees=150)
+        # forest = random_forest(fold["train"], features, [], gini, num_trees=150)
         forest = random_forest(fold["train"], features, [], entropy, num_trees=150)
         train_accuracies += accuracy(forest, fold["train"])
         test_accuracies += accuracy(forest, fold["test"])
