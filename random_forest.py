@@ -1,5 +1,4 @@
-from doctest import Example
-from itertools import *
+from itertools import groupby
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -170,10 +169,10 @@ def learn_decision_tree(examples, features, parent_examples, impurity_measure, m
                 tree.add_branch({"branch_label": v, "node": subtree})
         return tree
 
-def random_forest(examples, features, parent_examples, impurity_measure, min_prop=0, num_trees=50, min_examples=1, max_depth=float("Inf")):
+def random_forest(examples, features, impurity_measure, min_prop=0, num_trees=50, min_examples=1, max_depth=float("Inf")):
     forest = []
     for _ in tqdm(range(num_trees), desc="Generating Forest"):
-        forest.append(learn_decision_tree(examples, features, parent_examples, impurity_measure, min_prop, min_examples, max_depth))
+        forest.append(learn_decision_tree(examples, features, [], impurity_measure, min_prop, min_examples, max_depth))
     return forest
 
 def n_folds(N, examples):
@@ -216,9 +215,9 @@ if __name__ == "__main__":
     train_accuracies = test_accuracies = 0
     start = time.time()
     for fold in folds:
-        # forest = random_forest(fold["train"], features, [], misclassification, num_trees=150)
-        # forest = random_forest(fold["train"], features, [], gini, num_trees=150)
-        forest = random_forest(fold["train"], features, [], entropy, num_trees=150)
+        # forest = random_forest(fold["train"], features, misclassification, num_trees=150)
+        # forest = random_forest(fold["train"], features, gini, num_trees=150)
+        forest = random_forest(fold["train"], features, entropy, num_trees=150)
         train_accuracies += accuracy(forest, fold["train"])
         test_accuracies += accuracy(forest, fold["test"])
     end = time.time()
