@@ -1,5 +1,4 @@
-from doctest import Example
-from itertools import *
+from itertools import groupby
 import math
 import matplotlib.pyplot as plt
 import numpy as np
