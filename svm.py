@@ -6,7 +6,10 @@ def apply_k_all(x, idx, kernel=np.inner):
     res = np.apply_along_axis(lambda xi: kernel(xi, x[idx]), 1, x)
     return res
 
+def evaluate(example, alphas, b, kernel=np.inner):
+    kernel_res = np.apply_along_axis(lambda xi: kernel(xi, example), 1, )
 
+epsilon = .01
 def smo_train(examples, labels, c, tol, max_iter, kernel=np.inner):
     b = 0
     m = len(labels)
@@ -31,24 +34,25 @@ def smo_train(examples, labels, c, tol, max_iter, kernel=np.inner):
                 err_j = fx_j - labels[j]
                 ai_old = alpha[i]
                 aj_old = alpha[j]
-                if labels[i] == labels[j]:
+                if labels[i] != labels[j]:
                     L = max(0, alpha[j] - alpha[i])
                     H = min(c, c + alpha[j] - alpha[i])
                 else:
                     L = max(0, alpha[i] + alpha[j] - c)
                     H = min(c, alpha[i] + alpha[j])
                 if L == H:
-                    print("l=h")
                     continue
-                nu = 2 * kernel(examples[i], examples[j]) - kernel(
+                eta = 2 * kernel(examples[i], examples[j]) - kernel(
                     examples[i], examples[i]
                 ) - kernel(examples[j], examples[j])
-                if nu >= 0:
-                    print("nu positive")
+                if eta >= 0:
                     continue
-                alpha[j] = alpha[j] - (labels[j]*(err_i - err_j)) / nu
-                if np.abs(alpha[j] - aj_old) < 0.00001:
-                    print("alpha unchanged")
+                alpha[j] = alpha[j] - (labels[j]*(err_i - err_j)) / eta
+                if alpha[j] < L:
+                    alpha[j] = L
+                elif alpha[j] > H:
+                    alpha[j] = H
+                if np.abs(alpha[j] - aj_old) < 0.001:
                     continue
 
                 alpha[i] += labels[i] * labels[j] * (aj_old - alpha[j])
@@ -72,9 +76,9 @@ def smo_train(examples, labels, c, tol, max_iter, kernel=np.inner):
 
 if __name__ == "__main__":
     nr.seed(1234)
-    examples = nr.randint(0,12,(6,2))
+    examples = np.asarray([1,2,2,3,3,4,1,4,2,5,3,6]).reshape((6,2))
     print(examples)
-    labels = np.asarray([1,-1,-1,1,1,-1])
-    a, b = smo_train(examples,labels,c=2,tol=0.01,max_iter=10)
+    labels = np.asarray([-1,-1,-1,1,1,1])
+    a, b = smo_train(examples,labels,c=10,tol=0.001,max_iter=5  00)
     print(a)
     print(b)
