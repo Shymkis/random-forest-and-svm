@@ -219,7 +219,6 @@ def spirals(plot=False, svm=False):
     data = pd.read_csv("datasets/spirals.csv", index_col=0)
     features = {"x": (0, 1), "y": (0, 1)}
     if svm:
-
         examples = data[["x", "y"]].to_numpy()
         labels = data["class"].to_numpy()
         labels[labels == 0] = -1
