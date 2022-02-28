@@ -1,5 +1,3 @@
-from random import gauss
-from matplotlib.pyplot import axis
 import numpy as np
 import numpy.random as nr
 
@@ -71,7 +69,7 @@ def smo_train(x, y, c, tol, max_iter, kernel=np.inner, kernel_arg=None):
                     alpha[j] = L
                 elif alpha[j] > H:
                     alpha[j] = H
-                if np.abs(alpha[j] - aj_old) < 0.00001: # In pseudocode it says 10^-5
+                if np.abs(alpha[j] - aj_old) < 0.00001:
                     continue
                 s = y[i] * y[j]
                 alpha[i] += s * (aj_old - alpha[j])
